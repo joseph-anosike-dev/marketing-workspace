@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
+import { DevPage } from '@/features/dev/DevPage'
 import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
-import { DevPage } from '@/features/dev/DevPage'
+import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
+import { ProjectsPage } from '@/features/projects/ProjectsPage'
 
 const placeholders = [
   {
@@ -12,12 +14,6 @@ const placeholders = [
     title: 'Discover & Research',
     description: 'Launchpads for market, customer, competitor and ad research.',
     stage: 'the Discovery stage',
-  },
-  {
-    path: 'projects',
-    title: 'Research Projects',
-    description: 'Organise your research into dedicated projects.',
-    stage: 'the Projects stage',
   },
   {
     path: 'vault',
@@ -48,6 +44,8 @@ export default function App() {
         />
         <Route path="directory" element={<DirectoryPage />} />
         <Route path="directory/:toolId" element={<ToolDetailPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:projectId" element={<ProjectDetailPage />} />
         {placeholders.map((p) => (
           <Route
             key={p.path}
