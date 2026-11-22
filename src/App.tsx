@@ -2,15 +2,11 @@ import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
+import { DirectoryPage } from '@/features/directory/DirectoryPage'
+import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
 import { DevPage } from '@/features/dev/DevPage'
 
 const placeholders = [
-  {
-    path: 'directory',
-    title: 'Marketing Tools Directory',
-    description: 'Search and filter marketing tools and websites.',
-    stage: 'the Directory stage',
-  },
   {
     path: 'discover',
     title: 'Discover & Research',
@@ -50,6 +46,8 @@ export default function App() {
             />
           }
         />
+        <Route path="directory" element={<DirectoryPage />} />
+        <Route path="directory/:toolId" element={<ToolDetailPage />} />
         {placeholders.map((p) => (
           <Route
             key={p.path}
