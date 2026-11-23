@@ -7,6 +7,7 @@ import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { VaultPage } from '@/features/vault/VaultPage'
 
 const placeholders = [
   {
@@ -14,12 +15,6 @@ const placeholders = [
     title: 'Discover & Research',
     description: 'Launchpads for market, customer, competitor and ad research.',
     stage: 'the Discovery stage',
-  },
-  {
-    path: 'vault',
-    title: 'Research Vault',
-    description: 'Everything you have saved, searchable in one place.',
-    stage: 'the Vault stage',
   },
 ]
 
@@ -46,6 +41,7 @@ export default function App() {
         <Route path="directory/:toolId" element={<ToolDetailPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:projectId" element={<ProjectDetailPage />} />
+        <Route path="vault" element={<VaultPage />} />
         {placeholders.map((p) => (
           <Route
             key={p.path}

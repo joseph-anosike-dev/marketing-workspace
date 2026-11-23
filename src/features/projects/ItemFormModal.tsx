@@ -22,7 +22,10 @@ import { SECTION_FIELDS, buildMetadata, readFieldValues } from './sectionFields'
 
 export interface ItemSavedInfo {
   wasNew: boolean
-  /** Name of the place the finding was moved to, or null if it did not move. */
+  /**
+   * Name of the place the finding ended up when that differs from where it
+   * started (its old project, or the project the form opened in), or null.
+   */
   movedTo: string | null
 }
 
@@ -30,10 +33,10 @@ interface ItemFormModalProps {
   open: boolean
   /** The finding to edit, or null to add a new one. */
   item: ResearchItemView | null
-  /** The project a new finding is added to. */
-  projectId: string
+  /** The project a new finding starts in, or null for the Vault. */
+  projectId: string | null
   defaultSection: Section
-  /** Projects a finding can be moved to when editing. */
+  /** Projects the finding can be placed in. */
   projects: Project[]
   existingTags: TagWithCount[]
   onClose: () => void
@@ -70,7 +73,9 @@ function ItemForm({
   const [url, setUrl] = useState(item?.source_url ?? '')
   const [body, setBody] = useState(item?.body ?? '')
   const [tagsText, setTagsText] = useState(tagsToText(item?.tags ?? []))
-  const [projectChoice, setProjectChoice] = useState(item?.project_id ?? '')
+  const [projectChoice, setProjectChoice] = useState(
+    item ? (item.project_id ?? '') : (projectId ?? ''),
+  )
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -102,7 +107,7 @@ function ItemForm({
         saved = await itemsRepo.create({
           title,
           section,
-          project_id: projectId,
+          project_id: projectChoice || null,
           source_url: sourceUrl,
           kind: deriveKind('note', sourceUrl),
           body,
@@ -111,8 +116,9 @@ function ItemForm({
         })
       }
 
+      const origin = item ? item.project_id : projectId
       let movedTo: string | null = null
-      if (item && saved.project_id !== item.project_id) {
+      if (saved.project_id !== origin) {
         movedTo = saved.project_id
           ? (projects.find((p) => p.id === saved.project_id)?.name ?? 'another project')
           : 'the Vault'
@@ -282,26 +288,24 @@ function ItemForm({
         )}
       </div>
 
-      {item && (
-        <div>
-          <label htmlFor="item-project" className={labelClass}>
-            Project
-          </label>
-          <select
-            id="item-project"
-            className={inputClass}
-            value={projectChoice}
-            onChange={(e) => setProjectChoice(e.target.value)}
-          >
-            <option value="">No project (Vault only)</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div>
+        <label htmlFor="item-project" className={labelClass}>
+          Project
+        </label>
+        <select
+          id="item-project"
+          className={inputClass}
+          value={projectChoice}
+          onChange={(e) => setProjectChoice(e.target.value)}
+        >
+          <option value="">No project (Vault only)</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {error && (
         <p role="alert" className="text-sm text-red-700">

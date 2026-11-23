@@ -1,4 +1,6 @@
 import { db } from '@/lib/db'
+import { NotFoundError } from '@/lib/errors'
+import { normalizeTag } from '@/lib/tags'
 import type { TagWithCount } from '@/types'
 import type { TagRepository } from '../types'
 import { getArchivedProjectIds } from './archived'
@@ -34,4 +36,54 @@ async function list({ includeArchived = false } = {}): Promise<TagWithCount[]> {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
-export const localTags: TagRepository = { list }
+async function rename(id: string, newName: string) {
+  const name = normalizeTag(newName)
+  if (!name) throw new Error('Enter a tag name using letters or numbers.')
+  if (name.length > 60) throw new Error('Tag names can be at most 60 characters.')
+
+  return db.transaction('rw', [db.tags, db.research_item_tags], async () => {
+    const tag = await db.tags.get(id)
+    if (!tag) throw new NotFoundError('Tag', id)
+    if (tag.name === name) return { name, merged: false }
+
+    const target = await db.tags
+      .where('[owner_id+name]')
+      .equals([tag.owner_id, name])
+      .first()
+
+    if (!target) {
+      await db.tags.update(id, { name })
+      return { name, merged: false }
+    }
+
+    // Merge: move this tag's links onto the existing tag, then delete this tag.
+    const sourceLinks = await db.research_item_tags
+      .where('tag_id')
+      .equals(id)
+      .toArray()
+    const targetLinks = await db.research_item_tags
+      .where('tag_id')
+      .equals(target.id)
+      .toArray()
+    const alreadyTagged = new Set(targetLinks.map((l) => l.item_id))
+    const toAdd = sourceLinks
+      .filter((l) => !alreadyTagged.has(l.item_id))
+      .map((l) => ({ item_id: l.item_id, tag_id: target.id }))
+
+    if (toAdd.length > 0) await db.research_item_tags.bulkAdd(toAdd)
+    await db.research_item_tags.where('tag_id').equals(id).delete()
+    await db.tags.delete(id)
+    return { name, merged: true }
+  })
+}
+
+async function remove(id: string) {
+  await db.transaction('rw', [db.tags, db.research_item_tags], async () => {
+    const tag = await db.tags.get(id)
+    if (!tag) throw new NotFoundError('Tag', id)
+    await db.research_item_tags.where('tag_id').equals(id).delete()
+    await db.tags.delete(id)
+  })
+}
+
+export const localTags: TagRepository = { list, rename, remove }

@@ -46,4 +46,11 @@ export interface ResearchItemRepository {
 export interface TagRepository {
   /** Tags in use, with counts. Items in archived projects are excluded by default. */
   list(options?: { includeArchived?: boolean }): Promise<TagWithCount[]>
+  /**
+   * Renames a tag. If a tag with the new name already exists, the two are
+   * merged into it. Returns the cleaned-up name and whether a merge happened.
+   */
+  rename(id: string, newName: string): Promise<{ name: string; merged: boolean }>
+  /** Removes a tag from every finding and deletes it. The findings are kept. */
+  remove(id: string): Promise<void>
 }
