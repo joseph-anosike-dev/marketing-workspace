@@ -1,8 +1,8 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { itemsRepo, projectsRepo } from '@/data/repositories'
+import { itemsRepo, projectsRepo, tagsRepo } from '@/data/repositories'
 import { describeError } from '@/lib/describeError'
 import { formatDate, plural } from '@/lib/format'
 import {
@@ -10,9 +10,13 @@ import {
   SECTION_LABELS,
   type Project,
   type ResearchItemView,
+  type TagWithCount,
 } from '@/types'
+import { DeleteItemModal } from './DeleteItemModal'
 import { DeleteProjectModal } from './DeleteProjectModal'
+import { ItemFormModal } from './ItemFormModal'
 import { ProjectFormModal } from './ProjectFormModal'
+import { describeMetadata } from './sectionFields'
 import { StatusBadge } from './StatusBadge'
 import { countBySection, readSection } from './summary'
 
@@ -33,14 +37,26 @@ export function ProjectDetailPage() {
   // undefined = still loading, null = no such project
   const [project, setProject] = useState<Project | null | undefined>(undefined)
   const [items, setItems] = useState<ResearchItemView[]>([])
+  const [activeProjects, setActiveProjects] = useState<Project[]>([])
+  const [existingTags, setExistingTags] = useState<TagWithCount[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [itemFormOpen, setItemFormOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<ResearchItemView | null>(null)
+  const [deletingItem, setDeletingItem] = useState<ResearchItemView | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const found = await projectsRepo.get(projectId)
+      const [found, projects, tags] = await Promise.all([
+        projectsRepo.get(projectId),
+        projectsRepo.list(),
+        tagsRepo.list({ includeArchived: true }),
+      ])
       setProject(found ?? null)
+      setActiveProjects(projects)
+      setExistingTags(tags)
       // Opening a project directly shows its items even if it is archived.
       setItems(found ? await itemsRepo.list({ projectId }) : [])
       setError(null)
@@ -63,6 +79,12 @@ export function ProjectDetailPage() {
     } catch (e) {
       setError(describeError(e))
     }
+  }
+
+  function openItemForm(item: ResearchItemView | null) {
+    setNotice(null)
+    setEditingItem(item)
+    setItemFormOpen(true)
   }
 
   const backLink = (
@@ -115,12 +137,22 @@ export function ProjectDetailPage() {
     ...SECTIONS.map((s) => ({ value: s, label: SECTION_LABELS[s], count: counts[s] })),
   ]
 
+  // The project itself is always an option, even when it is archived.
+  const projectOptions = activeProjects.some((p) => p.id === project.id)
+    ? activeProjects
+    : [...activeProjects, project]
+
+  const emptyMessage =
+    items.length === 0
+      ? 'No findings in this project yet.'
+      : `No findings in ${section ? SECTION_LABELS[section] : 'this section'} yet.`
+
   return (
     <>
       {backLink}
 
       <div className="mt-2 mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight break-words md:text-3xl">
               {project.name}
@@ -139,7 +171,7 @@ export function ProjectDetailPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 md:shrink-0 md:justify-end">
           <Button
             type="button"
             variant="outline"
@@ -187,6 +219,27 @@ export function ProjectDetailPage() {
         </div>
       )}
 
+      {notice && (
+        <p
+          role="status"
+          className="mb-4 rounded-md border bg-muted/50 p-3 text-sm"
+        >
+          {notice}
+        </p>
+      )}
+
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Findings</h2>
+        <Button
+          type="button"
+          className="h-10 gap-2"
+          onClick={() => openItemForm(null)}
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          Add finding
+        </Button>
+      </div>
+
       <nav aria-label="Research sections" className="mb-5">
         <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           {tabs.map((tab) => {
@@ -220,49 +273,92 @@ export function ProjectDetailPage() {
       </nav>
 
       {visible.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          {items.length === 0
-            ? 'No findings in this project yet. Forms for adding findings arrive in the next stage. For now you can add test items on the Developer page (#/dev).'
-            : `No findings in ${SECTION_LABELS[section as keyof typeof SECTION_LABELS]} yet.`}
+        <div className="rounded-lg border border-dashed p-6 text-center">
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 h-10"
+            onClick={() => openItemForm(null)}
+          >
+            Add a finding
+          </Button>
         </div>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
-          {visible.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-lg border bg-card p-4"
-            >
-              <h2 className="leading-snug font-medium break-words">{item.title}</h2>
-              {!section && (
-                <p className="text-xs text-muted-foreground">
-                  {SECTION_LABELS[item.section]}
-                </p>
-              )}
-              {item.source_url && (
-                <a
-                  href={item.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm break-all underline"
-                >
-                  {item.source_url}
-                </a>
-              )}
-              {item.body && (
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-                  {preview(item.body)}
-                </p>
-              )}
-              {item.tags.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {item.tags.map((t) => `#${t}`).join(' ')}
-                </p>
-              )}
-              <p className="mt-auto pt-1 text-xs text-muted-foreground">
-                Updated {formatDate(item.updated_at)}
-              </p>
-            </li>
-          ))}
+          {visible.map((item) => {
+            const fields = describeMetadata(item.section, item.metadata)
+            return (
+              <li
+                key={item.id}
+                className="flex flex-col gap-2 rounded-lg border bg-card p-4"
+              >
+                <h3 className="leading-snug font-medium break-words">{item.title}</h3>
+                {!section && (
+                  <p className="text-xs text-muted-foreground">
+                    {SECTION_LABELS[item.section]}
+                  </p>
+                )}
+                {fields.length > 0 && (
+                  <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    {fields.map((field) => (
+                      <div key={field.label} className="flex gap-1">
+                        <dt className="text-muted-foreground">{field.label}:</dt>
+                        <dd className="break-words">{field.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {item.source_url && (
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm break-all underline"
+                  >
+                    {item.source_url}
+                  </a>
+                )}
+                {item.body && (
+                  <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+                    {preview(item.body)}
+                  </p>
+                )}
+                {item.tags.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {item.tags.map((t) => `#${t}`).join(' ')}
+                  </p>
+                )}
+                <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Updated {formatDate(item.updated_at)}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 md:h-8"
+                      aria-label={`Edit ${item.title}`}
+                      onClick={() => openItemForm(item)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 md:h-8"
+                      aria-label={`Delete ${item.title}`}
+                      onClick={() => setDeletingItem(item)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
 
@@ -281,6 +377,32 @@ export function ProjectDetailPage() {
         itemCount={items.length}
         onClose={() => setDeleteOpen(false)}
         onDeleted={() => navigate('/projects')}
+      />
+
+      <ItemFormModal
+        open={itemFormOpen}
+        item={editingItem}
+        projectId={project.id}
+        defaultSection={section || 'market'}
+        projects={projectOptions}
+        existingTags={existingTags}
+        onClose={() => setItemFormOpen(false)}
+        onSaved={(saved, info) => {
+          setItemFormOpen(false)
+          if (info.movedTo) {
+            setNotice(`Moved “${saved.title}” to ${info.movedTo}.`)
+          }
+          void load()
+        }}
+      />
+
+      <DeleteItemModal
+        item={deletingItem}
+        onClose={() => setDeletingItem(null)}
+        onDeleted={() => {
+          setDeletingItem(null)
+          void load()
+        }}
       />
     </>
   )

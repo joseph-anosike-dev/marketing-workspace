@@ -42,7 +42,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
-      className="m-auto w-[min(32rem,calc(100%-2rem))] rounded-lg border bg-card p-0 text-foreground shadow-lg backdrop:bg-black/50"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100%-2rem))] overflow-y-auto rounded-lg border bg-card p-0 text-foreground shadow-lg backdrop:bg-black/50"
     >
       {open && (
         <div className="p-5">
