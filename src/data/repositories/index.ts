@@ -1,3 +1,4 @@
+import { localAttachments } from './local/attachments'
 import { localBookmarks } from './local/bookmarks'
 import { localItems } from './local/items'
 import { localProjects } from './local/projects'
@@ -12,3 +13,4 @@ export const itemsRepo = localItems
 export const tagsRepo = localTags
 export const toolsRepo = localTools
 export const bookmarksRepo = localBookmarks
+export const attachmentsRepo = localAttachments

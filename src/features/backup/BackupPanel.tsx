@@ -8,8 +8,9 @@ import {
   summarizeBackup,
 } from '@/lib/backup'
 import { downloadTextFile } from '@/lib/download'
+import { formatBytes } from '@/lib/images'
 
-const MAX_BACKUP_BYTES = 25 * 1024 * 1024
+const MAX_BACKUP_BYTES = 200 * 1024 * 1024
 
 interface BackupPanelProps {
   onRestored: () => void
@@ -25,16 +26,24 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
     setError(null)
     try {
       const backup = await buildBackup()
+      const json = JSON.stringify(backup, null, 2)
+      const size = new Blob([json]).size
       const date = backup.exported_at.slice(0, 10)
       downloadTextFile(
         `marketing-workspace-backup-${date}.json`,
-        JSON.stringify(backup, null, 2),
+        json,
         'application/json',
       )
       const s = summarizeBackup(backup)
-      setMessage(
-        `Backup downloaded: ${s.projects} projects, ${s.items} items, ${s.tags} tags.`,
-      )
+      let text =
+        `Backup downloaded (${formatBytes(size)}): ${s.projects} projects, ` +
+        `${s.items} findings, ${s.tags} tags, ${s.attachments} images.`
+      if (size > MAX_BACKUP_BYTES) {
+        text +=
+          ` This is larger than the ${formatBytes(MAX_BACKUP_BYTES)} limit for restoring,` +
+          ' so remove some images before relying on it.'
+      }
+      setMessage(text)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
@@ -45,7 +54,9 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
     setError(null)
 
     if (file.size > MAX_BACKUP_BYTES) {
-      setError('This file is too large to be a backup (limit 25 MB).')
+      setError(
+        `This file is too large to be a backup (limit ${formatBytes(MAX_BACKUP_BYTES)}).`,
+      )
       return
     }
 
@@ -55,7 +66,8 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
       const confirmed = window.confirm(
         `Replace ALL current data with this backup?\n\n` +
           `Backup made: ${backup.exported_at}\n` +
-          `${s.projects} projects, ${s.items} items, ${s.tags} tags, ${s.bookmarks} bookmarks.\n\n` +
+          `${s.projects} projects, ${s.items} findings, ${s.tags} tags, ` +
+          `${s.attachments} images, ${s.bookmarks} bookmarks.\n\n` +
           `This cannot be undone. Tip: download a fresh backup first.`,
       )
       if (!confirmed) return
@@ -77,7 +89,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
       <h2 className="font-semibold">5. Backup and restore</h2>
       <p className="text-sm text-muted-foreground">
         Your data lives only in this browser. Download a backup regularly and keep
-        the file somewhere safe.
+        the file somewhere safe. Backups include your images.
       </p>
 
       <div className="flex flex-wrap gap-2">

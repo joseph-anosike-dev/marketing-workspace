@@ -53,7 +53,14 @@ describe('backup and restore', () => {
     expect(await itemsRepo.list()).toHaveLength(0)
 
     const summary = await restoreBackup(parseBackup(text))
-    expect(summary).toEqual({ projects: 1, items: 2, tags: 2, bookmarks: 0 })
+    expect(summary).toEqual({
+    projects: 1,
+    items: 2,
+    tags: 2,
+    bookmarks: 0,
+    attachments: 0,
+    })
+    
 
     const items = await itemsRepo.list()
     expect(items.map((i) => i.title).sort()).toEqual(['Kept', 'Loose'])
