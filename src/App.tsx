@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
-import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
+import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { DevPage } from '@/features/dev/DevPage'
 import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
@@ -22,16 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route
-          index
-          element={
-            <PlaceholderPage
-              title="Dashboard"
-              description="Recent projects, saved findings and quick actions."
-              stage="the Dashboard stage (last)"
-            />
-          }
-        />
+        <Route index element={<DashboardPage />} />
         <Route path="directory" element={<DirectoryPage />} />
         <Route path="directory/:toolId" element={<ToolDetailPage />} />
         <Route path="projects" element={<ProjectsPage />} />
