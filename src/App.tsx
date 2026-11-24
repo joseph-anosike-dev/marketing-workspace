@@ -5,20 +5,13 @@ import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { DevPage } from '@/features/dev/DevPage'
 import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
+import { DiscoverPage } from '@/features/discover/DiscoverPage'
+import { LaunchpadPage } from '@/features/discover/LaunchpadPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { TrashPage } from '@/features/trash/TrashPage'
 import { VaultPage } from '@/features/vault/VaultPage'
-
-const placeholders = [
-  {
-    path: 'discover',
-    title: 'Discover & Research',
-    description: 'Launchpads for market, customer, competitor and ad research.',
-    stage: 'the Discovery stage',
-  },
-]
 
 export default function App() {
   useEffect(() => {
@@ -44,19 +37,8 @@ export default function App() {
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="vault" element={<VaultPage />} />
-        {placeholders.map((p) => (
-          <Route
-            key={p.path}
-            path={p.path}
-            element={
-              <PlaceholderPage
-                title={p.title}
-                description={p.description}
-                stage={p.stage}
-              />
-            }
-          />
-        ))}
+        <Route path="discover" element={<DiscoverPage />} />
+        <Route path="discover/:section" element={<LaunchpadPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="trash" element={<TrashPage />} />
         <Route path="dev" element={<DevPage />} />
