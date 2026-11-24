@@ -4,6 +4,11 @@ import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { itemsRepo, projectsRepo, tagsRepo } from '@/data/repositories'
+import { exportCollection, exportFinding } from '@/features/export/bundle'
+import { ExportStatus } from '@/features/export/ExportStatus'
+import { summarizeVaultFilters } from '@/features/export/filterSummary'
+import { loadExportFinding, loadExportFindings } from '@/features/export/loadFindings'
+import { useExporter } from '@/features/export/useExporter'
 import { DeleteItemModal } from '@/features/projects/DeleteItemModal'
 import { ItemFormModal } from '@/features/projects/ItemFormModal'
 import { describeError } from '@/lib/describeError'
@@ -65,6 +70,7 @@ export function VaultPage() {
   const [editing, setEditing] = useState<ResearchItemView | null>(null)
   const [deleting, setDeleting] = useState<ResearchItemView | null>(null)
   const [tagsOpen, setTagsOpen] = useState(false)
+  const exporter = useExporter()
 
   const updateFilters = useCallback(
     (patch: Partial<VaultFilters>) => {
@@ -155,6 +161,20 @@ export function VaultPage() {
     setSearchParams({}, { replace: true })
   }
 
+  function exportItem(item: ResearchItemView) {
+    void exporter.run(item.id, async () => exportFinding(await loadExportFinding(item)))
+  }
+
+  // Exports exactly the findings on screen, so the file matches what you see.
+  function exportResults() {
+    void exporter.run('results', async () => {
+      const findings = await loadExportFindings(sorted)
+      return exportCollection(findings, {
+        filters: summarizeVaultFilters(filters, projects),
+      })
+    })
+  }
+
   function handleTagChanged(change: TagChange) {
     if (filters.tag === change.from) updateFilters({ tag: change.to ?? '' })
     reload()
@@ -168,6 +188,13 @@ export function VaultPage() {
       <PageHeader
         title="Research Vault"
         description="Everything you have saved, searchable in one place."
+      />
+
+      <ExportStatus
+        notice={exporter.notice}
+        warnings={exporter.warnings}
+        error={exporter.error}
+        onDismiss={exporter.dismiss}
       />
 
       {error && (
@@ -197,6 +224,17 @@ export function VaultPage() {
         <Button type="button" className="h-11 gap-2 sm:h-10" onClick={() => openForm(null)}>
           <Plus className="size-4" aria-hidden="true" />
           Add finding
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 sm:h-10"
+          disabled={sorted.length === 0 || exporter.busy}
+          onClick={exportResults}
+        >
+          {exporter.busyKey === 'results'
+            ? 'Exporting…'
+            : `Export results (${sorted.length})`}
         </Button>
       </div>
 
@@ -387,6 +425,9 @@ export function VaultPage() {
                     onEdit={openForm}
                     onDelete={setDeleting}
                     onSelectTag={(tag) => updateFilters({ tag })}
+                    onExport={exportItem}
+                    exporting={exporter.busyKey === item.id}
+                    exportDisabled={exporter.busy}
                   />
                 )
               })}

@@ -20,6 +20,11 @@ interface ItemCardProps {
   onEdit: (item: ResearchItemView) => void
   onDelete: (item: ResearchItemView) => void
   onSelectTag: (tag: string) => void
+  onExport: (item: ResearchItemView) => void
+  /** True while this finding is being exported. */
+  exporting: boolean
+  /** True while any export is running, so only one runs at a time. */
+  exportDisabled: boolean
 }
 
 export function ItemCard({
@@ -28,6 +33,9 @@ export function ItemCard({
   onEdit,
   onDelete,
   onSelectTag,
+  onExport,
+  exporting,
+  exportDisabled,
 }: ItemCardProps) {
   const fields = describeMetadata(item.section, item.metadata)
 
@@ -94,11 +102,22 @@ export function ItemCard({
         </ul>
       )}
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
         <p className="text-xs text-muted-foreground">
           Updated {formatDate(item.updated_at)}
         </p>
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10 md:h-8"
+            aria-label={`Export ${item.title}`}
+            disabled={exportDisabled}
+            onClick={() => onExport(item)}
+          >
+            {exporting ? 'Exporting…' : 'Export'}
+          </Button>
           <Button
             type="button"
             variant="outline"

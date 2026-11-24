@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button'
 import { itemsRepo, projectsRepo, tagsRepo } from '@/data/repositories'
 import { describeError } from '@/lib/describeError'
 import { formatDate, plural } from '@/lib/format'
+import { exportFinding, exportProject } from '@/features/export/bundle'
+import { ExportStatus } from '@/features/export/ExportStatus'
+import { loadExportFinding, loadExportFindings } from '@/features/export/loadFindings'
+import { useExporter } from '@/features/export/useExporter'
 import {
   SECTIONS,
   SECTION_LABELS,
@@ -47,6 +51,7 @@ export function ProjectDetailPage() {
   const [itemFormOpen, setItemFormOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ResearchItemView | null>(null)
   const [deletingItem, setDeletingItem] = useState<ResearchItemView | null>(null)
+  const exporter = useExporter()
 
   const load = useCallback(async () => {
     try {
@@ -80,6 +85,19 @@ export function ProjectDetailPage() {
     } catch (e) {
       setError(describeError(e))
     }
+  }
+
+  // Exports every finding in the project, whichever section tab is open.
+  function exportThisProject() {
+    if (!project) return
+    void exporter.run('project', async () => {
+      const all = await itemsRepo.list({ projectId: project.id })
+      return exportProject(project, await loadExportFindings(all))
+    })
+  }
+
+  function exportOneItem(item: ResearchItemView) {
+    void exporter.run(item.id, async () => exportFinding(await loadExportFinding(item)))
   }
 
   function openItemForm(item: ResearchItemView | null) {
@@ -177,6 +195,16 @@ export function ProjectDetailPage() {
             type="button"
             variant="outline"
             className="h-10"
+            disabled={items.length === 0 || exporter.busy}
+            title={items.length === 0 ? 'Nothing to export yet' : undefined}
+            onClick={exportThisProject}
+          >
+            {exporter.busyKey === 'project' ? 'Exporting…' : 'Export project'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10"
             onClick={() => setEditOpen(true)}
           >
             Edit
@@ -219,6 +247,13 @@ export function ProjectDetailPage() {
           </Button>
         </div>
       )}
+
+      <ExportStatus
+        notice={exporter.notice}
+        warnings={exporter.warnings}
+        error={exporter.error}
+        onDismiss={exporter.dismiss}
+      />
 
       {notice && (
         <p
@@ -335,11 +370,22 @@ export function ProjectDetailPage() {
                     {item.tags.map((t) => `#${t}`).join(' ')}
                   </p>
                 )}
-                <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                   <p className="text-xs text-muted-foreground">
                     Updated {formatDate(item.updated_at)}
                   </p>
                   <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 md:h-8"
+                      aria-label={`Export ${item.title}`}
+                      disabled={exporter.busy}
+                      onClick={() => exportOneItem(item)}
+                    >
+                      {exporter.busyKey === item.id ? 'Exporting…' : 'Export'}
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
