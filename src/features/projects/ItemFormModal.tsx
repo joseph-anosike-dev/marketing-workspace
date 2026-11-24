@@ -1,11 +1,20 @@
-import { useState, type FormEvent } from 'react'
+import {
+  useEffect,
+  useState,
+  type ClipboardEvent,
+  type FormEvent,
+} from 'react'
 import { Modal } from '@/components/Modal'
 import { Button } from '@/components/ui/button'
-import { itemsRepo } from '@/data/repositories'
+import { attachmentsRepo, itemsRepo } from '@/data/repositories'
 import { describeError } from '@/lib/describeError'
+import { plural } from '@/lib/format'
+import { prepareImage } from '@/lib/imageProcessing'
+import { MAX_ATTACHMENTS_PER_ITEM } from '@/lib/images'
 import {
   SECTIONS,
   SECTION_LABELS,
+  type Attachment,
   type Project,
   type ResearchItemView,
   type Section,
@@ -18,6 +27,7 @@ import {
   tagsToText,
   toggleTagInText,
 } from './formUtils'
+import { ImagePicker, type PendingImage } from './ImagePicker'
 import { SECTION_FIELDS, buildMetadata, readFieldValues } from './sectionFields'
 
 export interface ItemSavedInfo {
@@ -79,7 +89,87 @@ function ItemForm({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
+  // Once the finding itself has been saved, further saves update it instead of
+  // creating a second copy (this matters if saving the images fails and you retry).
+  const [savedItem, setSavedItem] = useState<ResearchItemView | null>(item)
+
+  const [existingImages, setExistingImages] = useState<Attachment[]>([])
+  const [loadingImages, setLoadingImages] = useState(item !== null)
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set())
+  const [pending, setPending] = useState<PendingImage[]>([])
+  const [imageMessages, setImageMessages] = useState<string[]>([])
+  const [processing, setProcessing] = useState(false)
+
+  useEffect(() => {
+    if (!item) return
+    let cancelled = false
+    attachmentsRepo
+      .listForItem(item.id)
+      .then((rows) => {
+        if (cancelled) return
+        setExistingImages(rows)
+        setLoadingImages(false)
+      })
+      .catch((e) => {
+        if (cancelled) return
+        setImageMessages([`Could not load this finding’s images: ${describeError(e)}`])
+        setLoadingImages(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [item])
+
   const activeTags = parseTags(tagsText)
+
+  async function addFiles(files: File[]) {
+    if (files.length === 0 || processing) return
+
+    const keptExisting = existingImages.filter((a) => !removedIds.has(a.id)).length
+    const room = Math.max(MAX_ATTACHMENTS_PER_ITEM - keptExisting - pending.length, 0)
+    const messages: string[] = []
+    const accepted = files.slice(0, room)
+
+    if (room === 0) {
+      messages.push(`A finding can have at most ${MAX_ATTACHMENTS_PER_ITEM} images.`)
+    } else if (files.length > room) {
+      messages.push(
+        `Only the first ${plural(room, 'image')} were added (limit ${MAX_ATTACHMENTS_PER_ITEM} per finding).`,
+      )
+    }
+
+    setProcessing(true)
+    const added: PendingImage[] = []
+    for (const file of accepted) {
+      try {
+        added.push({ key: crypto.randomUUID(), attachment: await prepareImage(file) })
+      } catch (e) {
+        messages.push(describeError(e))
+      }
+    }
+    setPending((previous) => [...previous, ...added])
+    setImageMessages(messages)
+    setProcessing(false)
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLFormElement>) {
+    const files = Array.from(event.clipboardData.files).filter((f) =>
+      f.type.startsWith('image/'),
+    )
+    // Pasting normal text carries no files, so it behaves as usual.
+    if (files.length === 0) return
+    event.preventDefault()
+    void addFiles(files)
+  }
+
+  function toggleExisting(id: string) {
+    setRemovedIds((previous) => {
+      const next = new Set(previous)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -87,18 +177,18 @@ function ItemForm({
     setError(null)
 
     const sourceUrl = normalizeUrlInput(url)
-    const metadata = buildMetadata(item?.metadata ?? {}, section, values)
+    const metadata = buildMetadata(savedItem?.metadata ?? {}, section, values)
     const tags = parseTags(tagsText)
 
+    let saved: ResearchItemView
     try {
-      let saved: ResearchItemView
-      if (item) {
-        saved = await itemsRepo.update(item.id, {
+      if (savedItem) {
+        saved = await itemsRepo.update(savedItem.id, {
           title,
           section,
           project_id: projectChoice || null,
           source_url: sourceUrl,
-          kind: deriveKind(item.kind, sourceUrl),
+          kind: deriveKind(savedItem.kind, sourceUrl),
           body,
           metadata,
           tags,
@@ -115,23 +205,45 @@ function ItemForm({
           tags,
         })
       }
-
-      const origin = item ? item.project_id : projectId
-      let movedTo: string | null = null
-      if (saved.project_id !== origin) {
-        movedTo = saved.project_id
-          ? (projects.find((p) => p.id === saved.project_id)?.name ?? 'another project')
-          : 'the Vault'
-      }
-      onSaved(saved, { wasNew: item === null, movedTo })
+      setSavedItem(saved)
     } catch (e) {
       setError(describeError(e))
       setSaving(false)
+      return
     }
+
+    if (pending.length > 0 || removedIds.size > 0) {
+      try {
+        await attachmentsRepo.apply(saved.id, {
+          add: pending.map((p) => p.attachment),
+          removeIds: [...removedIds],
+        })
+      } catch (e) {
+        setError(
+          `Your finding was saved, but its images could not be updated: ${describeError(e)}. ` +
+            'Fix the problem and save again, or close this form.',
+        )
+        setSaving(false)
+        return
+      }
+    }
+
+    const origin = item ? item.project_id : projectId
+    let movedTo: string | null = null
+    if (saved.project_id !== origin) {
+      movedTo = saved.project_id
+        ? (projects.find((p) => p.id === saved.project_id)?.name ?? 'another project')
+        : 'the Vault'
+    }
+    onSaved(saved, { wasNew: item === null, movedTo })
   }
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="space-y-4">
+    <form
+      onSubmit={(event) => void submit(event)}
+      onPaste={handlePaste}
+      className="space-y-4"
+    >
       <div>
         <label htmlFor="item-title" className={labelClass}>
           Title
@@ -243,6 +355,20 @@ function ItemForm({
         />
       </div>
 
+      <ImagePicker
+        existing={existingImages}
+        removedIds={removedIds}
+        pending={pending}
+        loadingExisting={loadingImages}
+        processing={processing}
+        messages={imageMessages}
+        onFiles={(files) => void addFiles(files)}
+        onToggleExisting={toggleExisting}
+        onRemovePending={(key) =>
+          setPending((previous) => previous.filter((p) => p.key !== key))
+        }
+      />
+
       <div>
         <label htmlFor="item-tags" className={labelClass}>
           Tags{' '}
@@ -317,7 +443,7 @@ function ItemForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || processing}>
           {item ? 'Save changes' : 'Add finding'}
         </Button>
       </div>
