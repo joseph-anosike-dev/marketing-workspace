@@ -100,14 +100,14 @@ function DeleteForm({
               <span className="font-medium">Delete them too</span>
               <br />
               <span className="text-muted-foreground">
-                This cannot be undone in the app.
+                They move to Trash and can be restored with the project.
               </span>
             </span>
           </label>
         </fieldset>
       ) : (
         <p className="text-sm text-muted-foreground">
-          The project is empty. This cannot be undone in the app.
+          The project is empty. It moves to Trash, where you can restore it.
         </p>
       )}
 

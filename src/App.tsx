@@ -8,6 +8,7 @@ import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { TrashPage } from '@/features/trash/TrashPage'
 import { VaultPage } from '@/features/vault/VaultPage'
 
 const placeholders = [
@@ -57,6 +58,7 @@ export default function App() {
           />
         ))}
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="trash" element={<TrashPage />} />
         <Route path="dev" element={<DevPage />} />
         <Route
           path="*"

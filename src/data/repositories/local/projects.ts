@@ -50,12 +50,21 @@ async function update(
  * (deleteItems: true) or moved to the Vault with no project (default).
  */
 async function remove(id: string, { deleteItems = false } = {}) {
-  const now = nowIso()
   await db.transaction('rw', db.projects, db.research_items, async () => {
     const project = await db.projects.get(id)
     if (!project || project.deleted_at) throw new NotFoundError('Project', id)
 
     const items = await db.research_items.where('project_id').equals(id).toArray()
+
+    // Trash tells "deleted together with the project" apart from "deleted
+    // earlier on its own" by comparing deletion times. So this project's
+    // deletion time must differ from that of every finding already deleted.
+    const alreadyDeleted = new Set(items.map((i) => i.deleted_at).filter(Boolean))
+    let now = nowIso()
+    while (alreadyDeleted.has(now)) {
+      now = new Date(Date.parse(now) + 1).toISOString()
+    }
+
     for (const item of items) {
       if (item.deleted_at) continue
       await db.research_items.update(

@@ -49,8 +49,8 @@ function DeleteForm({
         Delete <strong className="break-words">{item.title}</strong>?
       </p>
       <p className="text-sm text-muted-foreground">
-        It will disappear from this project, the Vault and search. There is no undo
-        button yet.
+        It will disappear from this project, the Vault and search. You can restore it
+        from Settings → Trash.
       </p>
 
       {error && (
