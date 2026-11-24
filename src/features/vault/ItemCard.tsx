@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { ItemImages } from '@/features/projects/ItemImages'
 import { describeMetadata } from '@/features/projects/sectionFields'
 import { formatDate } from '@/lib/format'
 import { SECTION_LABELS, type ResearchItemView } from '@/types'
@@ -73,6 +74,8 @@ export function ItemCard({
           {preview(item.body)}
         </p>
       )}
+
+      <ItemImages itemId={item.id} updatedAt={item.updated_at} title={item.title} />
 
       {item.tags.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">

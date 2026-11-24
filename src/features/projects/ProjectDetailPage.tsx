@@ -15,6 +15,7 @@ import {
 import { DeleteItemModal } from './DeleteItemModal'
 import { DeleteProjectModal } from './DeleteProjectModal'
 import { ItemFormModal } from './ItemFormModal'
+import { ItemImages } from './ItemImages'
 import { ProjectFormModal } from './ProjectFormModal'
 import { describeMetadata } from './sectionFields'
 import { StatusBadge } from './StatusBadge'
@@ -324,6 +325,11 @@ export function ProjectDetailPage() {
                     {preview(item.body)}
                   </p>
                 )}
+                <ItemImages
+                  itemId={item.id}
+                  updatedAt={item.updated_at}
+                  title={item.title}
+                />
                 {item.tags.length > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {item.tags.map((t) => `#${t}`).join(' ')}
