@@ -353,7 +353,9 @@ export function DevPage() {
         </Button>
       </section>
 
-      <BackupPanel onRestored={() => void reload()} />
+      <div className="mt-6">
+        <BackupPanel title="5. Backup and restore" onRestored={() => void reload()} />
+      </div>
     </>
   )
 }

@@ -13,10 +13,14 @@ import { formatBytes } from '@/lib/images'
 const MAX_BACKUP_BYTES = 200 * 1024 * 1024
 
 interface BackupPanelProps {
-  onRestored: () => void
+  onRestored?: () => void
+  title?: string
 }
 
-export function BackupPanel({ onRestored }: BackupPanelProps) {
+export function BackupPanel({
+  onRestored,
+  title = 'Backup and restore',
+}: BackupPanelProps) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +78,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
 
       await restoreBackup(backup)
       setMessage('Backup restored.')
-      onRestored()
+      onRestored?.()
     } catch (e) {
       setError(
         e instanceof BackupError
@@ -85,8 +89,8 @@ export function BackupPanel({ onRestored }: BackupPanelProps) {
   }
 
   return (
-    <section className="mt-6 space-y-3 rounded-lg border p-4">
-      <h2 className="font-semibold">5. Backup and restore</h2>
+    <section className="space-y-3 rounded-lg border p-4">
+      <h2 className="font-semibold">{title}</h2>
       <p className="text-sm text-muted-foreground">
         Your data lives only in this browser. Download a backup regularly and keep
         the file somewhere safe. Backups include your images.

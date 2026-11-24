@@ -3,6 +3,7 @@ import {
   Compass,
   FolderKanban,
   LayoutDashboard,
+  Settings,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -20,4 +21,5 @@ export const navItems: NavItem[] = [
   { to: '/discover', label: 'Discover', icon: Compass },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/vault', label: 'Vault', icon: Archive },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ]

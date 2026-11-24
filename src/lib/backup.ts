@@ -346,3 +346,18 @@ export async function restoreBackup(backup: BackupFile): Promise<BackupSummary> 
   })
   return summarizeBackup(backup)
 }
+
+/**
+ * Erases ALL user data (projects, findings, tags, images, bookmarks) in one
+ * transaction. The built-in tools directory is reference data and is kept.
+ */
+export async function wipeUserData(): Promise<void> {
+  await db.transaction('rw', USER_TABLES(), async () => {
+    await db.projects.clear()
+    await db.research_items.clear()
+    await db.tags.clear()
+    await db.research_item_tags.clear()
+    await db.bookmarks.clear()
+    await db.attachments.clear()
+  })
+}

@@ -7,6 +7,7 @@ import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { ToolDetailPage } from '@/features/directory/ToolDetailPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { SettingsPage } from '@/features/settings/SettingsPage'
 import { VaultPage } from '@/features/vault/VaultPage'
 
 const placeholders = [
@@ -55,6 +56,7 @@ export default function App() {
             }
           />
         ))}
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="dev" element={<DevPage />} />
         <Route
           path="*"

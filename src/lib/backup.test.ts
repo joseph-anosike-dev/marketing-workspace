@@ -6,6 +6,7 @@ import {
   buildBackup,
   parseBackup,
   restoreBackup,
+  wipeUserData,
   type BackupFile,
 } from './backup'
 
@@ -161,5 +162,23 @@ describe('parseBackup rejects bad files', () => {
     await expectRejected((b) => {
       ;(b.tables as Record<string, unknown>).bookmarks = undefined
     }, /bookmarks/)
+  })
+})
+describe('wipeUserData', () => {
+  it('erases user data but keeps the tools directory', async () => {
+    await seed()
+    await db.categories.add({ id: 'c1', name: 'Cat', position: 0 } as never)
+    await db.tools.add({ id: 't1', name: 'Tool' } as never)
+
+    await wipeUserData()
+
+    expect(await db.projects.count()).toBe(0)
+    expect(await db.research_items.count()).toBe(0)
+    expect(await db.tags.count()).toBe(0)
+    expect(await db.research_item_tags.count()).toBe(0)
+    expect(await db.attachments.count()).toBe(0)
+    expect(await db.bookmarks.count()).toBe(0)
+    expect(await db.categories.count()).toBe(1)
+    expect(await db.tools.count()).toBe(1)
   })
 })
