@@ -34,7 +34,7 @@ export function useExporter() {
         // Let the "Exporting…" label appear before the heavy work starts.
         await new Promise<void>((resolve) => setTimeout(resolve, 0))
         const result = await task()
-        downloadBinaryFile(result.file.fileName, result.file.bytes, result.file.mimeType)
+        await downloadBinaryFile(result.file.fileName, result.file.bytes, result.file.mimeType)
         setNotice(describeExport(result))
         setWarnings(result.warnings)
       } catch (e) {

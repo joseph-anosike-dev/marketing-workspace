@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
+import { useAndroidBackButton } from '@/app/useAndroidBackButton'
 import { AppShell } from '@/components/layout/AppShell'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { DevPage } from '@/features/dev/DevPage'
@@ -14,6 +15,8 @@ import { TrashPage } from '@/features/trash/TrashPage'
 import { VaultPage } from '@/features/vault/VaultPage'
 
 export default function App() {
+  useAndroidBackButton()
+
   useEffect(() => {
     // Ask the browser not to clear our saved data when disk space is low.
     void navigator.storage?.persist?.()

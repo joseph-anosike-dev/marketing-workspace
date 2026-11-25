@@ -290,7 +290,7 @@ export function parseBackup(text: string): BackupFile {
     raw === null ||
     (raw as { app?: unknown }).app !== BACKUP_APP_ID
   ) {
-    throw new BackupError('This is not a Marketing Workspace backup file.')
+    throw new BackupError('This is not a Re-Search backup file.')
   }
 
   const version = (raw as { format_version?: unknown }).format_version

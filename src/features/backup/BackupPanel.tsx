@@ -33,14 +33,14 @@ export function BackupPanel({
       const json = JSON.stringify(backup, null, 2)
       const size = new Blob([json]).size
       const date = backup.exported_at.slice(0, 10)
-      downloadTextFile(
-        `marketing-workspace-backup-${date}.json`,
+      await downloadTextFile(
+        `re-search-backup-${date}.json`,
         json,
         'application/json',
       )
       const s = summarizeBackup(backup)
       let text =
-        `Backup downloaded (${formatBytes(size)}): ${s.projects} projects, ` +
+        `Backup created (${formatBytes(size)}): ${s.projects} projects, ` +
         `${s.items} findings, ${s.tags} tags, ${s.attachments} images.`
       if (size > MAX_BACKUP_BYTES) {
         text +=

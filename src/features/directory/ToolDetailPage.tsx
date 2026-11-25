@@ -43,7 +43,7 @@ export function ToolDetailPage() {
   useEffect(() => {
     if (!tool) return
     const previous = document.title
-    document.title = `${tool.name} · Marketing Workspace`
+    document.title = `${tool.name} · Re-Search`
     return () => {
       document.title = previous
     }

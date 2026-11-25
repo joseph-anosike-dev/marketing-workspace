@@ -29,3 +29,7 @@ dist-ssr
 .env.*
 !.env.example
 marketing-workspace-backup-*.json
+
+# Android signing keys must never be committed
+*.keystore
+*.jks

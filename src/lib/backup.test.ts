@@ -106,7 +106,7 @@ describe('parseBackup rejects bad files', () => {
 
   it('rejects JSON from some other app', () => {
     expect(() => parseBackup(JSON.stringify({ app: 'other', format_version: 1 }))).toThrow(
-      /not a Marketing Workspace backup/,
+      /not a Re-Search backup/,
     )
   })
 
