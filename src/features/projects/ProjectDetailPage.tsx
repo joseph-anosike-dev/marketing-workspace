@@ -1,5 +1,7 @@
+import { ShowMore } from '@/components/ShowMore'
+import { usePaging } from '@/lib/usePaging'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { itemsRepo, projectsRepo, tagsRepo } from '@/data/repositories'
@@ -53,27 +55,41 @@ export function ProjectDetailPage() {
   const [deletingItem, setDeletingItem] = useState<ResearchItemView | null>(null)
   const exporter = useExporter()
 
-  const load = useCallback(async () => {
-    try {
-      const [found, projects, tags] = await Promise.all([
-        projectsRepo.get(projectId),
-        projectsRepo.list(),
-        tagsRepo.list({ includeArchived: true }),
-      ])
-      setProject(found ?? null)
-      setActiveProjects(projects)
-      setExistingTags(tags)
-      // Opening a project directly shows its items even if it is archived.
-      setItems(found ? await itemsRepo.list({ projectId }) : [])
-      setError(null)
-    } catch (e) {
-      setError(describeError(e))
-    }
-  }, [projectId])
+  // Hooks must run before any early return below.
+  const sectionItems = useMemo(
+    () => (section ? items.filter((i) => i.section === section) : items),
+    [items, section],
+  )
+  const paging = usePaging(sectionItems, `${projectId}|${section}`)
+
+  // Changing this number loads everything again.
+  const [version, setVersion] = useState(0)
+  const load = useCallback(() => setVersion((v) => v + 1), [])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let cancelled = false
+    Promise.all([
+      projectsRepo.get(projectId),
+      projectsRepo.list(),
+      tagsRepo.list({ includeArchived: true }),
+    ])
+      .then(async ([found, projects, tags]) => {
+        // Opening a project directly shows its items even if it is archived.
+        const foundItems = found ? await itemsRepo.list({ projectId }) : []
+        if (cancelled) return
+        setProject(found ?? null)
+        setActiveProjects(projects)
+        setExistingTags(tags)
+        setItems(foundItems)
+        setError(null)
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(describeError(e))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [projectId, version])
 
   async function toggleArchive() {
     if (!project) return
@@ -150,7 +166,7 @@ export function ProjectDetailPage() {
   }
 
   const counts = countBySection(items)
-  const visible = section ? items.filter((i) => i.section === section) : items
+  const visible = sectionItems
   const tabs = [
     { value: '', label: 'All', count: items.length },
     ...SECTIONS.map((s) => ({ value: s, label: SECTION_LABELS[s], count: counts[s] })),
@@ -322,7 +338,7 @@ export function ProjectDetailPage() {
         </div>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
-          {visible.map((item) => {
+          {paging.shown.map((item) => {
             const fields = describeMetadata(item.section, item.metadata)
             return (
               <li
@@ -413,6 +429,11 @@ export function ProjectDetailPage() {
           })}
         </ul>
       )}
+      <ShowMore
+        shown={paging.shown.length}
+        total={paging.total}
+        onClick={paging.showMore}
+      />
 
       <ProjectFormModal
         open={editOpen}

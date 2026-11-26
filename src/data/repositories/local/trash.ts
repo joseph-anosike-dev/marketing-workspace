@@ -1,3 +1,4 @@
+import { deleteRowsForItems, rowsForItems } from '@/lib/byItemId'
 import { db } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 import { nowIso } from '@/lib/ids'
@@ -33,8 +34,8 @@ function isTrashedWithProject(item: ResearchItem, project: Project): boolean {
 /** Deletes findings for good, with their tag links and images. Run inside a transaction. */
 async function purgeItemRows(ids: string[]) {
   if (ids.length === 0) return
-  await db.research_item_tags.where('item_id').anyOf(ids).delete()
-  await db.attachments.where('item_id').anyOf(ids).delete()
+  await deleteRowsForItems(db.research_item_tags, ids)
+  await deleteRowsForItems(db.attachments, ids)
   await db.research_items.bulkDelete(ids)
 }
 
@@ -55,10 +56,10 @@ async function list(): Promise<TrashContents> {
   const trashedItems = items.filter((i) => i.deleted_at)
   const projectById = new Map(projects.map((p) => [p.id, p]))
 
-  const files = await db.attachments
-    .where('item_id')
-    .anyOf(trashedItems.map((i) => i.id))
-    .toArray()
+  const files = await rowsForItems(
+    db.attachments,
+    trashedItems.map((i) => i.id),
+  )
   const usage = new Map<string, { count: number; bytes: number }>()
   for (const file of files) {
     const entry = usage.get(file.item_id) ?? { count: 0, bytes: 0 }

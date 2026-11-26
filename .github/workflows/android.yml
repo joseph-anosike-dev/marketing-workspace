@@ -43,10 +43,12 @@ jobs:
       - name: Run tests
         run: npm test
 
-      # Known problems are listed in the plan (VI, Hardening). Informational for now.
-      - name: Lint (informational)
+      - name: Lint
         run: npm run lint
-        continue-on-error: true
+
+      # Only what ships in the app. Build-tool advisories are not blocking.
+      - name: Check shipped dependencies for known vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Build web app and sync to Android
         run: npm run android:sync

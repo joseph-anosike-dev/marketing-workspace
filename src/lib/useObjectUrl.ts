@@ -5,14 +5,17 @@ export function useObjectUrl(blob: Blob | null): string | null {
   const [url, setUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!blob) {
-      setUrl(null)
-      return
-    }
+    if (!blob) return
     const objectUrl = URL.createObjectURL(blob)
+    // The effect exists to keep React in step with a browser resource (the
+    // object URL), which is created here and freed in the cleanup below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
+    return () => {
+      URL.revokeObjectURL(objectUrl)
+      setUrl(null)
+    }
   }, [blob])
 
-  return url
+  return blob ? url : null
 }

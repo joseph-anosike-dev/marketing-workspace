@@ -1,3 +1,4 @@
+import { stripControlChars } from './controlChars'
 export const ALLOWED_IMAGE_TYPES = [
   'image/png',
   'image/jpeg',
@@ -45,7 +46,7 @@ export function fitWithin(
 /** Removes folders and control characters and limits the length. Never returns "". */
 export function cleanFileName(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? ''
-  const cleaned = base.replace(/[\u0000-\u001f\u007f]/g, '').trim()
+  const cleaned = stripControlChars(base).trim()
   if (!cleaned) return 'image'
   if (cleaned.length <= MAX_FILE_NAME_LENGTH) return cleaned
 

@@ -1,3 +1,4 @@
+import { rowsForItems } from '@/lib/byItemId'
 import { db } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
 import { newId, nowIso } from '@/lib/ids'
@@ -41,7 +42,7 @@ async function listForItem(itemId: string): Promise<Attachment[]> {
 }
 
 async function listForItems(itemIds: string[]): Promise<Map<string, Attachment[]>> {
-  const rows = await db.attachments.where('item_id').anyOf(itemIds).toArray()
+  const rows = await rowsForItems(db.attachments, itemIds)
   const byItem = new Map<string, Attachment[]>()
   for (const row of sortByCreated(rows)) {
     const list = byItem.get(row.item_id) ?? []

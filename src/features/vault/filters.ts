@@ -56,6 +56,17 @@ export function writeVaultFilters(
   return next
 }
 
+/** True when the filter leaves out some findings, so the list is not the full count. */
+export function narrowsResults(filter: ItemFilter): boolean {
+  return Boolean(
+    filter.search ||
+      filter.section ||
+      filter.kind ||
+      filter.tag ||
+      filter.projectId !== undefined,
+  )
+}
+
 export function toItemFilter(filters: VaultFilters): ItemFilter {
   const result: ItemFilter = {}
   if (filters.search) result.search = filters.search

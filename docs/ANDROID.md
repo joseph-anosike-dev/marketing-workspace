@@ -64,6 +64,13 @@ Android can clear it if storage runs very low. Use **Settings → Backup**
 regularly. In the app, exports and backups open Android's share sheet, from
 where you save them to Files or Drive.
 
+Android's own cloud backup is switched off for this app (`android:allowBackup` is
+`false` in `android/app/src/main/AndroidManifest.xml`). That keeps your data
+from being copied to Google's servers or restored unpredictably onto another
+phone, but it also means **Settings → Backup is the only way to move your data
+to a new phone**. To allow Android's automatic backup instead, change that
+value to `true`.
+
 ## Building on your own computer
 
 You need Node 22 and Android Studio.

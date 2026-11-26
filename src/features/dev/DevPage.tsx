@@ -37,30 +37,36 @@ export function DevPage() {
   const [tagsText, setTagsText] = useState('')
   const [body, setBody] = useState('')
 
-  const reload = useCallback(async () => {
-    try {
-      const [p, i, t] = await Promise.all([
-        projectsRepo.list({ includeArchived: true }),
-        itemsRepo.list({ search, includeArchived }),
-        tagsRepo.list({ includeArchived }),
-      ])
-      setProjects(p)
-      setItems(i)
-      setTags(t)
-    } catch (e) {
-      setError(describeError(e))
-    }
-  }, [search, includeArchived])
+  // Changing this number loads everything again.
+  const [version, setVersion] = useState(0)
+  const reload = useCallback(() => setVersion((v) => v + 1), [])
 
   useEffect(() => {
-    void reload()
-  }, [reload])
+    let cancelled = false
+    Promise.all([
+      projectsRepo.list({ includeArchived: true }),
+      itemsRepo.list({ search, includeArchived }),
+      tagsRepo.list({ includeArchived }),
+    ])
+      .then(([p, i, t]) => {
+        if (cancelled) return
+        setProjects(p)
+        setItems(i)
+        setTags(t)
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(describeError(e))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [search, includeArchived, version])
 
   async function run(action: () => Promise<unknown>) {
     setError(null)
     try {
       await action()
-      await reload()
+      reload()
     } catch (e) {
       setError(describeError(e))
     }
@@ -354,7 +360,7 @@ export function DevPage() {
       </section>
 
       <div className="mt-6">
-        <BackupPanel title="5. Backup and restore" onRestored={() => void reload()} />
+        <BackupPanel title="5. Backup and restore" onRestored={reload} />
       </div>
     </>
   )

@@ -1,3 +1,5 @@
+import { ShowMore } from '@/components/ShowMore'
+import { usePaging } from '@/lib/usePaging'
 import { Plus, Search, SlidersHorizontal, Tags } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -28,6 +30,7 @@ import {
   countActive,
   readVaultFilters,
   sortItems,
+  narrowsResults,
   toItemFilter,
   writeVaultFilters,
   type VaultFilters,
@@ -96,7 +99,10 @@ export function VaultPage() {
     let cancelled = false
     Promise.all([
       itemsRepo.list(itemFilter),
-      itemsRepo.list({ includeArchived: filters.includeArchived }),
+      // Without a filter the list already is the full count; skip reading everything twice.
+      narrowsResults(itemFilter)
+        ? itemsRepo.count({ includeArchived: filters.includeArchived })
+        : Promise.resolve<number | null>(null),
       projectsRepo.list({ includeArchived: true }),
       tagsRepo.list({ includeArchived: filters.includeArchived }),
       tagsRepo.list({ includeArchived: true }),
@@ -104,7 +110,7 @@ export function VaultPage() {
       .then(([found, everything, allProjects, visibleTags, everyTag]) => {
         if (cancelled) return
         setItems(found)
-        setTotal(everything.length)
+        setTotal(everything ?? found.length)
         setProjects(allProjects)
         setTags(visibleTags)
         setAllTags(everyTag)
@@ -120,6 +126,7 @@ export function VaultPage() {
 
   const sorted = useMemo(() => sortItems(items ?? [], filters.sort), [items, filters.sort])
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects])
+  const paging = usePaging(sorted, JSON.stringify([itemFilter, filters.sort]))
 
   const projectOptions = useMemo(() => {
     const byName = (a: Project, b: Project) => a.name.localeCompare(b.name)
@@ -407,7 +414,7 @@ export function VaultPage() {
 
           {sorted.length > 0 && (
             <ul className="grid gap-3 2xl:grid-cols-2">
-              {sorted.map((item) => {
+              {paging.shown.map((item) => {
                 const project = item.project_id ? projectById.get(item.project_id) : undefined
                 return (
                   <ItemCard
@@ -433,6 +440,11 @@ export function VaultPage() {
               })}
             </ul>
           )}
+          <ShowMore
+            shown={paging.shown.length}
+            total={paging.total}
+            onClick={paging.showMore}
+          />
         </div>
       </div>
 

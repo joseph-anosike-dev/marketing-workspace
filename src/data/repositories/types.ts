@@ -37,6 +37,8 @@ export interface ProjectRepository {
 
 export interface ResearchItemRepository {
   list(filter?: ItemFilter): Promise<ResearchItemView[]>
+  /** How many findings there are, the same as list().length but much cheaper. */
+  count(options?: { includeArchived?: boolean }): Promise<number>
   get(id: string): Promise<ResearchItemView | undefined>
   create(input: ItemCreateInput): Promise<ResearchItemView>
   update(id: string, patch: ItemUpdateInput): Promise<ResearchItemView>

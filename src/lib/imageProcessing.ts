@@ -154,7 +154,7 @@ export async function prepareImage(file: File): Promise<NewAttachment> {
       encoded = await encode(bitmap, plan.width, plan.height)
     } catch (e) {
       const reason = e instanceof Error ? e.message : 'could not be shrunk'
-      throw new Error(`“${name}” ${reason}.`)
+      throw new Error(`“${name}” ${reason}.`, { cause: e })
     }
 
     const resized = plan.width !== bitmap.width || plan.height !== bitmap.height

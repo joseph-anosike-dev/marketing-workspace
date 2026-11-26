@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   NO_PROJECT,
   countActive,
+  narrowsResults,
   readVaultFilters,
   sortItems,
   toItemFilter,
@@ -151,5 +152,19 @@ describe('countActive', () => {
     expect(
       countActive(readVaultFilters(params('section=market&tag=x&archived=1'))),
     ).toBe(3)
+  })
+})
+describe('narrowsResults', () => {
+  it('is false for an unfiltered list, even when archived items are included', () => {
+    expect(narrowsResults({})).toBe(false)
+    expect(narrowsResults({ includeArchived: true })).toBe(false)
+  })
+
+  it('is true when anything leaves findings out', () => {
+    expect(narrowsResults({ search: 'x' })).toBe(true)
+    expect(narrowsResults({ section: 'market' })).toBe(true)
+    expect(narrowsResults({ kind: 'note' })).toBe(true)
+    expect(narrowsResults({ tag: 'pricing' })).toBe(true)
+    expect(narrowsResults({ projectId: null })).toBe(true)
   })
 })

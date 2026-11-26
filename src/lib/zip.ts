@@ -1,3 +1,4 @@
+import { hasControlChars } from './controlChars'
 import { crc32 } from '@/lib/crc32'
 import { formatBytes } from '@/lib/images'
 
@@ -35,7 +36,7 @@ function checkPath(path: string): void {
     path.startsWith('/') ||
     path.endsWith('/') ||
     path.includes('\\') ||
-    /[\u0000-\u001f\u007f]/.test(path) ||
+    hasControlChars(path) ||
     path.split('/').some((part) => part === '' || part === '.' || part === '..')
   if (unsafe) throw new ZipError(`Unsafe file path in export: "${path}".`)
 }

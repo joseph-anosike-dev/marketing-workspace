@@ -26,23 +26,29 @@ export function ProjectsPage() {
   const [editing, setEditing] = useState<Project | null>(null)
   const [deleting, setDeleting] = useState<Project | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      const [allProjects, items] = await Promise.all([
-        projectsRepo.list({ includeArchived: true }),
-        itemsRepo.list({ includeArchived: true }),
-      ])
-      setProjects(allProjects)
-      setCounts(countByProject(items))
-      setError(null)
-    } catch (e) {
-      setError(describeError(e))
-    }
-  }, [])
+  // Changing this number loads everything again.
+  const [version, setVersion] = useState(0)
+  const reload = useCallback(() => setVersion((v) => v + 1), [])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let cancelled = false
+    Promise.all([
+      projectsRepo.list({ includeArchived: true }),
+      itemsRepo.list({ includeArchived: true }),
+    ])
+      .then(([allProjects, items]) => {
+        if (cancelled) return
+        setProjects(allProjects)
+        setCounts(countByProject(items))
+        setError(null)
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(describeError(e))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [version])
 
   const archivedCount = projects?.filter((p) => p.status === 'archived').length ?? 0
 
@@ -68,7 +74,7 @@ export function ProjectsPage() {
       await projectsRepo.update(project.id, {
         status: project.status === 'active' ? 'archived' : 'active',
       })
-      await load()
+      reload()
     } catch (e) {
       setError(describeError(e))
     }
@@ -225,7 +231,7 @@ export function ProjectsPage() {
         onSaved={(saved, wasNew) => {
           setFormOpen(false)
           if (wasNew) navigate(`/projects/${saved.id}`)
-          else void load()
+          else reload()
         }}
       />
 
@@ -235,7 +241,7 @@ export function ProjectsPage() {
         onClose={() => setDeleting(null)}
         onDeleted={() => {
           setDeleting(null)
-          void load()
+          reload()
         }}
       />
     </>

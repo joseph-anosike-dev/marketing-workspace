@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NotFoundError } from '@/lib/errors'
+import { rowsForItems } from '@/lib/byItemId'
 import { newId, nowIso } from '@/lib/ids'
 import { itemCreateSchema, itemUpdateSchema } from '@/lib/schemas'
 import { normalizeTag } from '@/lib/tags'
@@ -21,7 +22,7 @@ async function assertProjectExists(projectId: string) {
 }
 
 async function tagNamesByItem(itemIds: string[]) {
-  const links = await db.research_item_tags.where('item_id').anyOf(itemIds).toArray()
+  const links = await rowsForItems(db.research_item_tags, itemIds)
   const tagIds = [...new Set(links.map((l) => l.tag_id))]
   const tags = await db.tags.bulkGet(tagIds)
   const nameById = new Map(
@@ -111,6 +112,17 @@ async function list(filter: ItemFilter = {}): Promise<ResearchItemView[]> {
   return views.sort((a, b) => b.updated_at.localeCompare(a.updated_at))
 }
 
+async function count({ includeArchived = false } = {}): Promise<number> {
+  const archivedIds = includeArchived ? null : await getArchivedProjectIds()
+  // One bulk read; counting record by record with a cursor is much slower.
+  const items = await db.research_items.toArray()
+  return items.filter(
+    (item) =>
+      !item.deleted_at &&
+      !(archivedIds && item.project_id && archivedIds.has(item.project_id)),
+  ).length
+}
+
 async function create(input: Parameters<ResearchItemRepository['create']>[0]) {
   const { tags, ...data } = itemCreateSchema.parse(input)
   const now = nowIso()
@@ -163,6 +175,7 @@ async function remove(id: string) {
 
 export const localItems: ResearchItemRepository = {
   list,
+  count,
   get,
   create,
   update,
