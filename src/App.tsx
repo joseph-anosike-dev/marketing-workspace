@@ -10,12 +10,15 @@ import { DiscoverPage } from '@/features/discover/DiscoverPage'
 import { LaunchpadPage } from '@/features/discover/LaunchpadPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { QuickAddPage } from '@/features/share/QuickAddPage'
+import { useShareTarget } from '@/features/share/useShareTarget'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { TrashPage } from '@/features/trash/TrashPage'
 import { VaultPage } from '@/features/vault/VaultPage'
 
 export default function App() {
   useAndroidBackButton()
+  useShareTarget()
 
   useEffect(() => {
     // Ask the browser not to clear our saved data when disk space is low.
@@ -33,6 +36,7 @@ export default function App() {
         <Route path="vault" element={<VaultPage />} />
         <Route path="discover" element={<DiscoverPage />} />
         <Route path="discover/:section" element={<LaunchpadPage />} />
+        <Route path="add" element={<QuickAddPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="trash" element={<TrashPage />} />
         <Route path="dev" element={<DevPage />} />
