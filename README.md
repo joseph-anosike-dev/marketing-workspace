@@ -1,75 +1,14 @@
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+ABOUT THE APP
+- Purpose: help a marketer walk into any niche, study it deeply, and leave with actionable knowledge. The app is a fast CAPTURE tool. All real thinking and synthesis happen in Obsidian, in my own zettelkasten, which I keep manual on purpose.
+- Core principle: the research process must work with NO AI, NO paid subscription and NO external integrations. AI is optional and never required.
+- Data model: a "finding" is one atomic note with a title, a section, tags, optional source link, Markdown notes and up to 10 images. Findings can sit in a project or in a general vault. Findings export to Markdown with frontmatter, tags and an attachments folder.
+- Sections and their optional structured fields:
+  - Market research (type of observation: demand, trend, market size, opportunity, risk)
+  - Competitors (competitor name, price)
+  - Advertising (platform, hook)
+  - Customers (type: pain point, desire, objection, customer quote)
+  - Products
+  - Keywords
+  - General
+- A "Discover" area already gives link launchpads to sources such as Google, Trends, Reddit, YouTube, Amazon and the Meta Ad Library for each section. There is also a directory of marketing tools.
+- Quick save: I can share a screenshot or link from any Android app straight into a new finding.
