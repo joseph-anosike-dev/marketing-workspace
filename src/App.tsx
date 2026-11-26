@@ -10,6 +10,8 @@ import { DiscoverPage } from '@/features/discover/DiscoverPage'
 import { LaunchpadPage } from '@/features/discover/LaunchpadPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { PromptBankPage } from '@/features/promptbank/PromptBankPage'
+import { PromptEntryPage } from '@/features/promptbank/PromptEntryPage'
 import { QuickAddPage } from '@/features/share/QuickAddPage'
 import { useShareTarget } from '@/features/share/useShareTarget'
 import { SettingsPage } from '@/features/settings/SettingsPage'
@@ -36,6 +38,8 @@ export default function App() {
         <Route path="vault" element={<VaultPage />} />
         <Route path="discover" element={<DiscoverPage />} />
         <Route path="discover/:section" element={<LaunchpadPage />} />
+        <Route path="prompts" element={<PromptBankPage />} />
+        <Route path="prompts/:entryId" element={<PromptEntryPage />} />
         <Route path="add" element={<QuickAddPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="trash" element={<TrashPage />} />
